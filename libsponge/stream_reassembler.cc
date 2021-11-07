@@ -132,6 +132,10 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         else
             break;
     }
+    // 检测是否存在数据超出了容量。注意这里的容量并不是指可保存的字节数量，而是指可保存的窗口大小
+    size_t first_unacceptable_idx = _next_assembled_idx + _capacity - _output.buffer_size();
+    if (new_idx + data_size > first_unacceptable_idx)
+        data_size = first_unacceptable_idx;
 
     // 判断是否还有数据是独立的， 顺便检测当前子串是否被上一个子串完全包含
     if (data_size > 0) {
@@ -143,21 +147,14 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
             // 如果没写全，则将其保存起来
             if (write_byte < new_data.size()) {
                 // _output 写不下了，插入进 _unassemble_strs 中
-                const size_t can_store_byte =
-                    std::min(_capacity - _unassembled_bytes_num, new_data.size() - write_byte);
-                if (can_store_byte) {
-                    const string data_to_store = new_data.substr(write_byte, can_store_byte);
-                    _unassembled_bytes_num += data_to_store.size();
-                    _unassemble_strs.insert(make_pair(_next_assembled_idx, std::move(data_to_store)));
-                }
+                const string data_to_store = new_data.substr(write_byte, new_data.size() - write_byte);
+                _unassembled_bytes_num += data_to_store.size();
+                _unassemble_strs.insert(make_pair(_next_assembled_idx, std::move(data_to_store)));
             }
         } else {
-            const size_t can_store_byte = std::min(_capacity - _unassembled_bytes_num, new_data.size());
-            if (can_store_byte) {
-                const string data_to_store = new_data.substr(0, can_store_byte);
-                _unassembled_bytes_num += data_to_store.size();
-                _unassemble_strs.insert(make_pair(new_idx, std::move(data_to_store)));
-            }
+            const string data_to_store = new_data.substr(0, new_data.size());
+            _unassembled_bytes_num += data_to_store.size();
+            _unassemble_strs.insert(make_pair(new_idx, std::move(data_to_store)));
         }
     }
 
