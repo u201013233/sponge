@@ -133,9 +133,13 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
             break;
     }
     // 检测是否存在数据超出了容量。注意这里的容量并不是指可保存的字节数量，而是指可保存的窗口大小
+    //! NOTE: 注意这里我们仍然接收了 index 小于 first_unacceptable_idx  但
+    //        index + data.size >= first_unacceptable_idx 的那部分数据
+    //        这是因为处于安全考虑，最好减少算术运算操作以避免上下溢出
+    //        同时多余的那部分数据最多也只会多占用 1kb 左右，属于可承受范围之内
     size_t first_unacceptable_idx = _next_assembled_idx + _capacity - _output.buffer_size();
-    if (new_idx + data_size > first_unacceptable_idx)
-        data_size = first_unacceptable_idx;
+    if (first_unacceptable_idx <= new_idx)
+        return;
 
     // 判断是否还有数据是独立的， 顺便检测当前子串是否被上一个子串完全包含
     if (data_size > 0) {
