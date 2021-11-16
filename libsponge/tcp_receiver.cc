@@ -1,5 +1,7 @@
 #include "tcp_receiver.hh"
 
+#include <cassert>
+
 // Dummy implementation of a TCP receiver
 
 // For Lab 2, please replace with a real implementation that passes the
@@ -20,20 +22,20 @@ using namespace std;
 void TCPReceiver::segment_received(const TCPSegment &seg) {
     // 判断是否是 SYN 包
     const TCPHeader &header = seg.header();
-    if (header.syn) {
+    if (!_set_syn_flag) {
+        // 注意 SYN 包之前的数据包必须全部丢弃
+        if (!header.syn)
+            return;
         _isn = header.seqno;
         _set_syn_flag = true;
-        _last_abs_seqno = 0;
-        // 注意 SYN 包之前的数据包必须全部丢弃
-    } else if (!_set_syn_flag)
-        return;
-    _last_abs_seqno = unwrap(header.seqno, _isn, _last_abs_seqno);
-    // 判断是否是 FIN 包，这将决定是否装配 EOF
-    bool set_fin_flag = false;
-    if (header.fin)
-        set_fin_flag = true;
-    uint64_t stream_index = _last_abs_seqno - 1 + (header.syn);
-    _reassembler.push_substring(seg.payload().copy(), stream_index, set_fin_flag);
+    }
+    uint64_t abs_ackno = _reassembler.stream_out().bytes_written() + 1;
+    uint64_t curr_abs_seqno = unwrap(header.seqno, _isn, abs_ackno);
+
+    //! NOTE: SYN 包中的 payload 不能被丢弃
+    //! NOTE: reassember 足够鲁棒以至于无需进行任何 seqno 过滤操作
+    uint64_t stream_index = curr_abs_seqno - 1 + (header.syn);
+    _reassembler.push_substring(seg.payload().copy(), stream_index, header.fin);
 }
 
 optional<WrappingInt32> TCPReceiver::ackno() const {
