@@ -35,9 +35,6 @@ void TCPSender::fill_window() {
         if (!_set_syn_flag) {
             segment.header().syn = true;
             _set_syn_flag = true;
-            // 之前没设置过时间，则重设更新时间
-            _timeout = _initial_retransmission_timeout;
-            _timecount = 0;
         }
         // 设置 seqno
         segment.header().seqno = next_seqno();
@@ -61,6 +58,13 @@ void TCPSender::fill_window() {
         // 如果没有任何数据，则停止数据包的发送
         if (segment.length_in_sequence_space() == 0)
             break;
+
+        // 如果没有正在等待的数据包，则重设更新时间
+        if (_outgoing_map.empty()) {
+            _timeout = _initial_retransmission_timeout;
+            _timecount = 0;
+        }
+
         // 发送
         _segments_out.push(segment);
 
@@ -124,4 +128,8 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
 
 unsigned int TCPSender::consecutive_retransmissions() const { return _consecutive_retransmissions_count; }
 
-void TCPSender::send_empty_segment() { _segments_out.push(TCPSegment()); }
+void TCPSender::send_empty_segment() {
+    TCPSegment segment;
+    segment.header().seqno = next_seqno();
+    _segments_out.push(segment);
+}
