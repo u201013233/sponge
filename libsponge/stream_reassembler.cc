@@ -62,6 +62,12 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         }
     }
 
+    size_t first_unaccpet_idx = _next_assembled_idx + _capacity - _output.buffer_size();
+    if (new_idx + data_size > first_unaccpet_idx) {
+        data_size = first_unaccpet_idx - new_idx;
+    }
+
+
     if (data_size > 0) {
         const string new_data = data.substr(start_pos, data_size);
         if (new_idx == _next_assembled_idx) {
