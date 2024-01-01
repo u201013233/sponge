@@ -16,7 +16,7 @@ ByteStream::ByteStream(const size_t capacity)
     : _queue(), _capacity_size(capacity), _written_size(0), _read_size(0), _end_input(false), _error(false) {}
 
 size_t ByteStream::write(const string &data) {
-    size_t write_size = min(data.size(), _capacity_size - _written_size);
+    size_t write_size = min(data.size(), _capacity_size - buffer_size());
     _written_size += write_size;
     for (size_t i = 0; i < write_size; i++) {
         _queue.push_back(data[i]);
