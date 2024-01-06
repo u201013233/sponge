@@ -46,19 +46,19 @@ void TCPSender::fill_window() {
         seq.header().seqno = next_seqno();
         size_t len =
             min(win_sz - bytes_in_fly - seq.header().syn, min(TCPConfig::MAX_PAYLOAD_SIZE, _stream.buffer_size()));
-        seq.payload() = _stream.read(len);
+        seq.payload() = move(_stream.read(len));
         if (!_send_fin && _stream.eof() && win_sz > (seq.length_in_sequence_space() + bytes_in_flight())) {
             seq.header().fin = true;
             _send_fin = true;
         }
 
+        if (seq.length_in_sequence_space() == 0) {
+            break;
+        }
+
         if (_outing_queue.empty()) {
             _timeout = _initial_retransmission_timeout;
             _timeoutcouter = 0;
-        }
-
-        if (seq.length_in_sequence_space() == 0) {
-            break;
         }
 
         _segments_out.push(seq);
@@ -109,7 +109,9 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
         auto pair = _outing_queue.front();
         _segments_out.push(pair.second);
 
-        _timeout *= 2;
+        if (_remote_win_sz > 0) {
+            _timeout *= 2;
+        }
 
         _consecutive_retransmissions_count++;
         _timeoutcouter = 0;
