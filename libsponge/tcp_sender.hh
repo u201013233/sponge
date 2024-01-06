@@ -17,7 +17,6 @@
 //! segments if the retransmission timer expires.
 class TCPSender {
   private:
-    int _timeout;
     int _timeoutcouter;
     std::queue<std::pair<uint64_t, TCPSegment>> _outing_queue;
     size_t bytes_in_fly;
@@ -34,6 +33,8 @@ class TCPSender {
 
     //! retransmission timer for the connection
     unsigned int _initial_retransmission_timeout;
+
+    int _timeout;
 
     //! outgoing stream of bytes that have not yet been sent
     ByteStream _stream;
