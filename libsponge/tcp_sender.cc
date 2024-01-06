@@ -47,7 +47,7 @@ void TCPSender::fill_window() {
         size_t len =
             min(win_sz - bytes_in_fly - seq.header().syn, min(TCPConfig::MAX_PAYLOAD_SIZE, _stream.buffer_size()));
         seq.payload() = _stream.read(len);
-        if (!_send_fin && _stream.eof()) {
+        if (!_send_fin && _stream.eof() && win_sz > (seq.length_in_sequence_space() + bytes_in_flight())) {
             seq.header().fin = true;
             _send_fin = true;
         }
