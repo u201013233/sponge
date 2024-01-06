@@ -57,6 +57,10 @@ void TCPSender::fill_window() {
             _timeoutcouter = 0;
         }
 
+        if (seq.length_in_sequence_space() == 0) {
+            break;
+        }
+
         _segments_out.push(seq);
         _next_seqno += seq.length_in_sequence_space();
         _outing_queue.push(std::make_pair(_next_seqno, seq));
