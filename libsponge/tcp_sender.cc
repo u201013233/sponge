@@ -20,8 +20,15 @@ using namespace std;
 TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const std::optional<WrappingInt32> fixed_isn)
     : _isn(fixed_isn.value_or(WrappingInt32{random_device()()}))
     , _initial_retransmission_timeout{retx_timeout}
-    , _timeout(_initial_retransmission_timeout)
-    , _stream(capacity) {}
+    , _stream(capacity)
+    , _timeout{retx_timeout}
+    , _timeoutcouter(0)
+    , _outing_queue()
+    , bytes_in_fly(0)
+    , _remote_win_sz(1)
+    , _send_sync(false)
+    , _send_fin(false)
+    , _consecutive_retransmissions_count(0) {}
 
 uint64_t TCPSender::bytes_in_flight() const { return bytes_in_fly; }
 
@@ -37,7 +44,8 @@ void TCPSender::fill_window() {
             _send_sync = true;
         }
         seq.header().seqno = next_seqno();
-        size_t len =min(win_sz - bytes_in_fly - seq.header().syn, min(TCPConfig::MAX_PAYLOAD_SIZE, _stream.buffer_size()));
+        size_t len =
+            min(win_sz - bytes_in_fly - seq.header().syn, min(TCPConfig::MAX_PAYLOAD_SIZE, _stream.buffer_size()));
         seq.payload() = _stream.read(len);
         if (!_send_fin && _stream.eof()) {
             seq.header().fin = true;
@@ -97,9 +105,9 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
         auto pair = _outing_queue.front();
         _segments_out.push(pair.second);
 
-        _timeout *=2;
+        _timeout *= 2;
 
-        _consecutive_retransmissions_count ++;
+        _consecutive_retransmissions_count++;
         _timeoutcouter = 0;
     }
 }

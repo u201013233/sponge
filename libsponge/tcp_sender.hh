@@ -17,14 +17,6 @@
 //! segments if the retransmission timer expires.
 class TCPSender {
   private:
-    int _timeoutcouter;
-    std::queue<std::pair<uint64_t, TCPSegment>> _outing_queue;
-    size_t bytes_in_fly;
-    size_t _remote_win_sz;
-    bool _send_sync;
-    bool _send_fin;
-    size_t _consecutive_retransmissions_count;
-
     //! our initial sequence number, the number for our SYN.
     WrappingInt32 _isn;
 
@@ -34,13 +26,28 @@ class TCPSender {
     //! retransmission timer for the connection
     unsigned int _initial_retransmission_timeout;
 
-    int _timeout;
-
     //! outgoing stream of bytes that have not yet been sent
     ByteStream _stream;
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    // 超时时间
+    int _timeout;
+    // 计数器
+    int _timeoutcouter= {0};
+
+    std::queue<std::pair<uint64_t, TCPSegment>> _outing_queue;
+
+    size_t bytes_in_fly = 0;
+
+    size_t _remote_win_sz = 0;
+
+    bool _send_sync = false;
+
+    bool _send_fin = false;
+
+    size_t _consecutive_retransmissions_count;
 
   public:
     //! Initialize a TCPSender
