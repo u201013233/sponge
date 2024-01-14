@@ -21,6 +21,7 @@ size_t TCPConnection::unassembled_bytes() const { return _receiver.unassembled_b
 size_t TCPConnection::time_since_last_segment_received() const { return _time_since_last_segment_received; }
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
+    cerr << "segment_received" << seg.payload().str() << endl;
     _time_since_last_segment_received = 0;
     // keep-alive
     if (_receiver.ackno().has_value() && seg.length_in_sequence_space() == 0 &&
@@ -100,12 +101,14 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
 }
 
 void TCPConnection::end_input_stream() {
+    cerr << "end_input_stream" << endl;
     _sender.stream_in().end_input();
     _sender.fill_window();
     send_segments();
 }
 
 void TCPConnection::connect() {
+    cerr << "connect" << endl;
     _is_alive = true;
     _sender.fill_window();
     send_segments();
